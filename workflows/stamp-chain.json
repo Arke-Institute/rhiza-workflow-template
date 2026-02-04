@@ -1,0 +1,14 @@
+{
+  "label": "Stamp Chain",
+  "description": "Chain two stamp workers - stamps should accumulate on the target entity",
+  "version": "1.0",
+  "entry": "$STAMP_KLADOS_1",
+  "flow": {
+    "$STAMP_KLADOS_1": {
+      "then": { "pass": "$STAMP_KLADOS_2" }
+    },
+    "$STAMP_KLADOS_2": {
+      "then": { "done": true }
+    }
+  }
+}
