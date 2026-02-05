@@ -35,8 +35,8 @@ ARKE_USER_KEY=uk_your_key_here
 ARKE_NETWORK=test
 
 # Klados IDs (workers must be deployed and active)
-STAMP_KLADOS_1=klados_your_first_stamp_worker
-STAMP_KLADOS_2=klados_your_second_stamp_worker
+# Note: Same klados can be used in multiple steps
+STAMP_KLADOS=klados_your_stamp_worker
 ```
 
 ### 3. Find available klados workers
@@ -79,19 +79,25 @@ rhiza-workflow-template/
 
 ## Workflow Definition Format
 
-Workflow definitions are JSON files in `workflows/`:
+Workflows use a **step-based format** where:
+- `entry` is a step name (string)
+- `flow` keys are step names (not klados IDs)
+- Each step has `klados` (which worker to invoke) and `then` (what happens after)
+- The same klados can appear in multiple steps
 
 ```json
 {
   "label": "My Workflow",
   "description": "What this workflow does",
-  "version": "1.0",
-  "entry": "$ENTRY_KLADOS",
+  "version": "2.0",
+  "entry": "first_step",
   "flow": {
-    "$ENTRY_KLADOS": {
-      "then": { "pass": "$NEXT_KLADOS" }
+    "first_step": {
+      "klados": { "pi": "$KLADOS_ID" },
+      "then": { "pass": "second_step" }
     },
-    "$NEXT_KLADOS": {
+    "second_step": {
+      "klados": { "pi": "$KLADOS_ID" },
       "then": { "done": true }
     }
   }
@@ -102,10 +108,19 @@ Workflow definitions are JSON files in `workflows/`:
 
 ### Handoff Types
 
-- `{ "pass": "klados_id" }` - Pass output to next step (1:1)
-- `{ "scatter": "klados_id" }` - Fan out to multiple parallel invocations (1:N)
-- `{ "gather": "klados_id" }` - Collect outputs from scatter (N:1)
+Each step's `then` specifies what happens after the klados completes:
+
+- `{ "pass": "step_name" }` - Pass output to next step (1:1)
+- `{ "scatter": "step_name" }` - Fan out to multiple parallel invocations (1:N)
+- `{ "gather": "step_name" }` - Collect outputs from scatter (N:1)
 - `{ "done": true }` - Workflow complete
+
+### Why Step Names?
+
+Using step names (instead of klados IDs as keys) allows:
+1. The same klados to appear multiple times in a workflow
+2. Clear naming that describes what each step does
+3. Path tracking that shows execution history
 
 ## Creating Your Own Workflow
 
@@ -117,20 +132,22 @@ Workflow definitions are JSON files in `workflows/`:
 
 ## Example: Stamp Chain
 
-The included `stamp-chain` workflow demonstrates basic chaining:
+The included `stamp-chain` workflow demonstrates using the same klados twice:
 
 ```
-Entity → Stamp Worker 1 → Stamp Worker 2 → Done
-                ↓                ↓
-           adds stamp[0]    adds stamp[1]
+Entity → Stamp Worker (first_stamp) → Stamp Worker (second_stamp) → Done
+                ↓                              ↓
+           adds stamp[0]                  adds stamp[1]
 ```
+
+Both steps use the same klados (`$STAMP_KLADOS`), but each step has a unique name. The workflow path tracks which step was executed: `["first_stamp"]` then `["first_stamp", "second_stamp"]`.
 
 After the workflow completes, the entity has:
 ```json
 {
   "stamps": [
-    { "stamp_number": 1, "stamped_by": "klados_1", ... },
-    { "stamp_number": 2, "stamped_by": "klados_2", ... }
+    { "stamp_number": 1, "stamped_by": "klados_stamp", ... },
+    { "stamp_number": 2, "stamped_by": "klados_stamp", ... }
   ],
   "stamp_count": 2
 }
@@ -153,8 +170,7 @@ This template uses `@arke-institute/klados-testing` which provides:
 | `ARKE_USER_KEY` | Your user API key (uk_...) |
 | `ARKE_NETWORK` | Network: 'test' or 'main' |
 | `RHIZA_ID` | Rhiza ID (from registration) |
-| `STAMP_KLADOS_1` | First stamp worker ID |
-| `STAMP_KLADOS_2` | Second stamp worker ID |
+| `STAMP_KLADOS` | Stamp worker ID |
 
 ## Resources
 

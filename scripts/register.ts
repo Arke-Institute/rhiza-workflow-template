@@ -27,6 +27,27 @@ const ARKE_NETWORK = (process.env.ARKE_NETWORK || 'test') as 'test' | 'main';
 const STATE_FILE = '.rhiza-state.json';
 
 // =============================================================================
+// Types
+// =============================================================================
+
+interface FlowStep {
+  klados: { pi: string; type?: string };
+  then:
+    | { done: true }
+    | { pass: string; route?: unknown[] }
+    | { scatter: string; route?: unknown[] }
+    | { gather: string; route?: unknown[] };
+}
+
+interface Workflow {
+  label: string;
+  description?: string;
+  version: string;
+  entry: string;
+  flow: Record<string, FlowStep>;
+}
+
+// =============================================================================
 // Helper Functions
 // =============================================================================
 
@@ -112,16 +133,10 @@ async function main() {
   const rawWorkflow = JSON.parse(rawContent);
 
   // Substitute environment variables
-  let workflow: {
-    label: string;
-    description?: string;
-    version: string;
-    entry: string;
-    flow: Record<string, { then: unknown }>;
-  };
+  let workflow: Workflow;
 
   try {
-    workflow = substituteEnvVars(rawWorkflow) as typeof workflow;
+    workflow = substituteEnvVars(rawWorkflow) as Workflow;
   } catch (error) {
     console.error(`Error: ${(error as Error).message}`);
     console.error('\nMake sure all required environment variables are set.');
@@ -132,8 +147,11 @@ async function main() {
   console.log('Workflow configuration:');
   console.log(`  Label: ${workflow.label}`);
   console.log(`  Version: ${workflow.version}`);
-  console.log(`  Entry: ${workflow.entry}`);
+  console.log(`  Entry step: ${workflow.entry}`);
   console.log(`  Flow steps: ${Object.keys(workflow.flow).length}`);
+  for (const [stepName, step] of Object.entries(workflow.flow)) {
+    console.log(`    - ${stepName}: klados=${step.klados.pi}`);
+  }
   console.log('');
 
   // Configure test client
@@ -176,7 +194,7 @@ async function main() {
       description: workflow.description,
       version: workflow.version,
       entry: workflow.entry,
-      flow: workflow.flow as Record<string, { then: { done: true } | { pass: string } | { scatter: string } | { gather: string } }>,
+      flow: workflow.flow,
       collectionId,
     });
 
