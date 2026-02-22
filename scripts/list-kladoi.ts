@@ -35,7 +35,7 @@ interface KladosEntity {
 
 interface SearchResult {
   entities: Array<{
-    pi: string;
+    id: string;
     type: string;
     label?: string;
   }>;
@@ -80,14 +80,14 @@ async function main() {
     for (const entity of result.entities) {
       // Fetch full entity to get properties
       try {
-        const klados = await apiRequest<KladosEntity>('GET', `/entities/${entity.pi}`);
+        const klados = await apiRequest<KladosEntity>('GET', `/entities/${entity.id}`);
         const label = klados.properties.label || '(unnamed)';
         const status = klados.properties.status || 'unknown';
         console.log(
-          `${entity.pi.padEnd(31)} | ${label.slice(0, 24).padEnd(24)} | ${status}`
+          `${entity.id.padEnd(31)} | ${label.slice(0, 24).padEnd(24)} | ${status}`
         );
       } catch {
-        console.log(`${entity.pi.padEnd(31)} | (unable to fetch)        |`);
+        console.log(`${entity.id.padEnd(31)} | (unable to fetch)        |`);
       }
     }
 

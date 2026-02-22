@@ -75,7 +75,7 @@ describe('stamp-chain workflow', () => {
         content: 'This entity will be stamped twice',
         created_at: new Date().toISOString(),
       },
-      collectionId: targetCollection.id,
+      collection: targetCollection.id,
     });
     log(`Created test entity: ${testEntity.id}`);
   });
